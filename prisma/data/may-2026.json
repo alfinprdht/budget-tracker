@@ -1,0 +1,205 @@
+[
+  {
+    "date": "Tuesday | May 5, 2026",
+    "total_day": 6308700,
+    "items": [
+      { "category": "Culinary", "total": 23000, "notes": "Bakso" },
+      { "category": "Groceries", "total": 257200, "notes": "Indomaret" },
+      { "category": "Household", "total": 157500, "notes": "Bu Yuli" },
+      { "category": "Culinary", "total": 96000, "notes": "Shopeefood" },
+      { "category": "Debt", "total": 3002500, "notes": "KPR" },
+      { "category": "Debt", "total": 2802500, "notes": "Umroh" }
+    ]
+  },
+  {
+    "date": "Wednesday | May 6, 2026",
+    "total_day": 598955,
+    "items": [
+      { "category": "Groceries", "total": 275655, "notes": "Hidroponik" },
+      { "category": "Culinary", "total": 78100, "notes": "Kopi" },
+      { "category": "Household", "total": 52000, "notes": "Pulsa hp" },
+      { "category": "Culinary", "total": 29000, "notes": "Jus" },
+      { "category": "Outfits", "total": 164200, "notes": "Baju tidur lucu" }
+    ]
+  },
+  {
+    "date": "Thursday | May 7, 2026",
+    "total_day": 536565,
+    "items": [
+      { "category": "Culinary", "total": 31000, "notes": "Pecel" },
+      { "category": "Others", "total": 200000, "notes": "Tarik tunai" },
+      { "category": "Pets", "total": 214065, "notes": "pasir kucing" },
+      { "category": "Culinary", "total": 51500, "notes": "mie ayam" },
+      { "category": "Entertainment", "total": 40000, "notes": "Vape" }
+    ]
+  },
+  {
+    "date": "Friday | May 8, 2026",
+    "total_day": 0,
+    "items": []
+  },
+  {
+    "date": "Saturday | May 9, 2026",
+    "total_day": 263175,
+    "items": [
+      { "category": "Culinary", "total": 30000, "notes": "SFood" },
+      { "category": "Culinary", "total": 60000, "notes": "CW" },
+      { "category": "Groceries", "total": 101075, "notes": "Hidroponik" },
+      { "category": "Groceries", "total": 72100, "notes": "Indomaret" }
+    ]
+  },
+  {
+    "date": "Sunday | May 10, 2026",
+    "total_day": 339349,
+    "items": [
+      { "category": "Groceries", "total": 263323, "notes": "Takoyaki + chili oil" },
+      { "category": "Groceries", "total": 76026, "notes": "Alfamidi" }
+    ]
+  },
+  {
+    "date": "Monday | May 11, 2026",
+    "total_day": 130000,
+    "items": [
+      { "category": "Transportation", "total": 20000, "notes": "ovo-grab" },
+      { "category": "Culinary", "total": 110000, "notes": "Sfood, chikuro" }
+    ]
+  },
+  {
+    "date": "Tuesday | May 12, 2026",
+    "total_day": 229200,
+    "items": [
+      { "category": "Groceries", "total": 229200, "notes": "alfamidi" }
+    ]
+  },
+  {
+    "date": "Wednesday | May 13, 2026",
+    "total_day": 511000,
+    "items": [
+      { "category": "Transportation", "total": 11000, "notes": "ovo-grab" },
+      { "category": "Debt", "total": 500000, "notes": "cc bca" }
+    ]
+  },
+  {
+    "date": "Thursday | May 14, 2026",
+    "total_day": 757900,
+    "items": [
+      { "category": "Groceries", "total": 38800, "notes": "alfamidi" },
+      { "category": "Outfits", "total": 219100, "notes": "jaket" },
+      { "category": "Others", "total": 500000, "notes": "Qurban-asapin" }
+    ]
+  },
+  {
+    "date": "Friday | May 15, 2026",
+    "total_day": 0,
+    "items": []
+  },
+  {
+    "date": "Saturday | May 16, 2026",
+    "total_day": 435547,
+    "items": [
+      { "category": "Culinary", "total": 359447, "notes": "cocari" },
+      { "category": "Groceries", "total": 76100, "notes": "alfamidi" }
+    ]
+  },
+  {
+    "date": "Sunday | May 17, 2026",
+    "total_day": 200000,
+    "items": [
+      { "category": "Others", "total": 200000, "notes": "tarik tunai" }
+    ]
+  },
+  {
+    "date": "Monday | May 18, 2026",
+    "total_day": 247611,
+    "items": [
+      { "category": "Groceries", "total": 125000, "notes": "alfamidi" },
+      { "category": "Household", "total": 122611, "notes": "alat dapur" }
+    ]
+  },
+  {
+    "date": "Tuesday | May 19, 2026",
+    "total_day": 93500,
+    "items": [
+      { "category": "Culinary", "total": 27500, "notes": "kopi" },
+      { "category": "Culinary", "total": 17000, "notes": "bakso" },
+      { "category": "Culinary", "total": 49000, "notes": "gacoan" }
+    ]
+  },
+  {
+    "date": "Wednesday | May 20, 2026",
+    "total_day": 16000,
+    "items": [
+      { "category": "Culinary", "total": 16000, "notes": "mie ayam" }
+    ]
+  },
+  {
+    "date": "Thursday | May 21, 2026",
+    "total_day": 217000,
+    "items": [
+      { "category": "Culinary", "total": 51000, "notes": "gacoan" },
+      { "category": "Culinary", "total": 16000, "notes": "roti bakar" },
+      { "category": "Entertainment", "total": 150000, "notes": "vape" }
+    ]
+  },
+  {
+    "date": "Friday | May 22, 2026",
+    "total_day": 718000,
+    "items": [
+      { "category": "Groceries", "total": 172000, "notes": "alfamidi" },
+      { "category": "Medical", "total": 350000, "notes": "urbansmile" },
+      { "category": "Culinary", "total": 146000, "notes": "cw" },
+      { "category": "Culinary", "total": 50000, "notes": "zocco" }
+    ]
+  },
+  {
+    "date": "Saturday | May 23, 2026",
+    "total_day": 16000,
+    "items": [
+      { "category": "Transportation", "total": 16000, "notes": "grab" }
+    ]
+  },
+  {
+    "date": "Sunday | May 24, 2026",
+    "total_day": 271000,
+    "items": [
+      { "category": "Groceries", "total": 214000, "notes": "superindo" },
+      { "category": "Culinary", "total": 35000, "notes": "tanima" },
+      { "category": "Culinary", "total": 22000, "notes": "bakso" }
+    ]
+  },
+  {
+    "date": "Monday | May 25, 2026",
+    "total_day": 355000,
+    "items": [
+      { "category": "Culinary", "total": 119000, "notes": "wfc" },
+      { "category": "Groceries", "total": 236000, "notes": "belanja daging" }
+    ]
+  },
+  {
+    "date": "Tuesday | May 26, 2026",
+    "total_day": 45000,
+    "items": [
+      { "category": "Groceries", "total": 19000, "notes": "sembako" },
+      { "category": "Culinary", "total": 26000, "notes": "ayam geprek" }
+    ]
+  },
+  {
+    "date": "Wednesday | May 27, 2026",
+    "total_day": 20000,
+    "items": [
+      { "category": "Groceries", "total": 20000, "notes": "warung madura" }
+    ]
+  },
+  {
+    "date": "Thursday | May 28, 2026",
+    "total_day": 25000,
+    "items": [
+      { "category": "Groceries", "total": 25000, "notes": "warung madura" }
+    ]
+  },
+  {
+    "date": "Friday | May 29, 2026",
+    "total_day": 0,
+    "items": []
+  }
+]

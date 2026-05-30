@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Budget Tracker
 
-## Getting Started
+Aplikasi web sederhana untuk melacak pengeluaran harian dengan Next.js, Prisma, dan MySQL.
 
-First, run the development server:
+## Fitur
+
+- Input transaksi: tanggal, kategori, total, catatan
+- Dashboard ringkasan bulan berjalan
+- Master kategori (tambah, edit, hapus)
+
+## Prasyarat
+
+- Node.js 20+
+- MySQL 8 (lokal atau via Docker)
+
+## Setup Database
+
+### Opsi A: Docker
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up -d
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Connection string default sudah diset di `.env`:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+DATABASE_URL="mysql://root:root@localhost:3306/budget_tracker"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Opsi B: MySQL Lokal
 
-## Learn More
+1. Buat database:
 
-To learn more about Next.js, take a look at the following resources:
+```sql
+CREATE DATABASE budget_tracker;
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Sesuaikan kredensial di `.env` (salin dari `.env.example` jika perlu).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Menjalankan Aplikasi
 
-## Deploy on Vercel
+```bash
+npm install
+npm run db:migrate
+npm run db:seed
+npm run dev
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Buka [http://localhost:3000](http://localhost:3000).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Script Berguna
+
+- `npm run db:migrate` — jalankan migrasi database
+- `npm run db:seed` — isi kategori default
+- `npm run db:push` — sinkronkan schema tanpa migrasi (development)
+- `npm run build` — build production
