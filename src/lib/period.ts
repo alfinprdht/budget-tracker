@@ -148,8 +148,19 @@ export function buildPeriodOptions(
   return Array.from(optionMap.values()).sort((a, b) => b.key.localeCompare(a.key));
 }
 
+export function getBudgetPeriodOptions(): PeriodOption[] {
+  const currentRange = getPeriodRangeForDate(new Date());
+  const nextRange = getNextPeriodRange(currentRange);
+
+  return [currentRange, nextRange].map((range) => ({
+    key: getPeriodKey(range.start),
+    label: formatPeriodLabel(range.start, range.end),
+  }));
+}
+
 export function getDayLabel(date: Date): string {
   return new Intl.DateTimeFormat("id-ID", {
+    weekday: "short",
     day: "numeric",
     month: "short",
   }).format(date);

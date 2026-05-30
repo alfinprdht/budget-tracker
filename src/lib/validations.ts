@@ -42,3 +42,20 @@ export const loginSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const budgetItemSchema = z.object({
+  date: z.string().min(1, "Tanggal wajib diisi"),
+  categoryId: z.coerce
+    .number()
+    .int("Kategori tidak valid")
+    .positive("Kategori wajib dipilih"),
+  amount: z.coerce.number().positive("Total harus lebih dari 0"),
+  description: z
+    .string()
+    .trim()
+    .max(1000, "Deskripsi maksimal 1000 karakter")
+    .optional()
+    .transform((value) => (value === "" ? undefined : value)),
+});
+
+export type BudgetItemInput = z.infer<typeof budgetItemSchema>;

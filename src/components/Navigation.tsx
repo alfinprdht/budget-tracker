@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard" },
+  { href: "/rancangan-anggaran", label: "Rancangan Anggaran" },
   { href: "/categories", label: "Kategori" },
 ];
 

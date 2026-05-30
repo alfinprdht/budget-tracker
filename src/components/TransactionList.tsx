@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { TransactionType } from "@prisma/client";
 import { deleteTransaction } from "@/actions/transactions";
 import { TransactionModal } from "@/components/TransactionModal";
 import type { CategoryOption, TransactionFormValues } from "@/components/TransactionForm";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -15,8 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency, formatDate } from "@/lib/format";
-import { getTransactionTypeLabel } from "@/lib/transaction-type";
+import { formatCurrency, formatDate, toInputDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type TransactionItem = {
@@ -73,27 +73,40 @@ function DeleteTransactionButton({ id }: { id: number }) {
 export function TransactionList({
   transactions,
   categories,
+  periodStart,
+  periodEnd,
 }: {
   transactions: TransactionItem[];
   categories: CategoryOption[];
+  periodStart: string;
+  periodEnd: string;
 }) {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState(periodStart);
+  const [dateTo, setDateTo] = useState(periodEnd);
   const [simulationMode, setSimulationMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [editingTransaction, setEditingTransaction] = useState<TransactionItem | null>(
     null,
   );
 
+  useEffect(() => {
+    setDateFrom(periodStart);
+    setDateTo(periodEnd);
+  }, [periodStart, periodEnd]);
+
   const filteredTransactions = useMemo(() => {
     return transactions.filter((transaction) => {
+      const transactionDate = toInputDate(new Date(transaction.date));
       const matchesCategory =
         categoryFilter === "all" || transaction.categoryId === Number(categoryFilter);
       const matchesType = typeFilter === "all" || transaction.type === typeFilter;
+      const matchesDateRange = transactionDate >= dateFrom && transactionDate <= dateTo;
 
-      return matchesCategory && matchesType;
+      return matchesCategory && matchesType && matchesDateRange;
     });
-  }, [transactions, categoryFilter, typeFilter]);
+  }, [transactions, categoryFilter, typeFilter, dateFrom, dateTo]);
 
   const usedCategories = useMemo(() => {
     const usedIds = new Set(transactions.map((transaction) => transaction.categoryId));
@@ -148,7 +161,7 @@ export function TransactionList({
   return (
     <>
       <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="type-filter">Filter Jenis</Label>
             <select
@@ -177,6 +190,28 @@ export function TransactionList({
                 </option>
               ))}
             </select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="date-from">Dari Tanggal</Label>
+            <Input
+              id="date-from"
+              type="date"
+              value={dateFrom}
+              min={periodStart}
+              max={dateTo}
+              onChange={(event) => setDateFrom(event.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="date-to">Sampai Tanggal</Label>
+            <Input
+              id="date-to"
+              type="date"
+              value={dateTo}
+              min={dateFrom}
+              max={periodEnd}
+              onChange={(event) => setDateTo(event.target.value)}
+            />
           </div>
         </div>
 
@@ -210,7 +245,6 @@ export function TransactionList({
                   </TableHead>
                 ) : null}
                 <TableHead>Tanggal</TableHead>
-                <TableHead>Jenis</TableHead>
                 <TableHead>Kategori</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Catatan</TableHead>
@@ -242,18 +276,6 @@ export function TransactionList({
                     </TableCell>
                   ) : null}
                   <TableCell>{formatDate(transaction.date)}</TableCell>
-                  <TableCell>
-                    <span
-                      className={cn(
-                        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                        transaction.type === "INCOME"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700",
-                      )}
-                    >
-                      {getTransactionTypeLabel(transaction.type)}
-                    </span>
-                  </TableCell>
                   <TableCell>{transaction.category.name}</TableCell>
                   <TableCell
                     className={cn(

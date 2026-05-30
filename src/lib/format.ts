@@ -17,6 +17,15 @@ export function formatDate(date: Date | string) {
   }).format(new Date(date));
 }
 
+export function formatDateWithWeekday(date: Date | string) {
+  return new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(date));
+}
+
 export function getMonthLabel(date: Date = new Date()) {
   return new Intl.DateTimeFormat("id-ID", {
     month: "long",

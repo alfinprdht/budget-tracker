@@ -1,3 +1,4 @@
+import { getBudgetExpensesByCategory } from "@/actions/budget";
 import { getLatestAnalysis } from "@/actions/analysis";
 import { getCategories } from "@/actions/categories";
 import {
@@ -20,7 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, toInputDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
   formatPeriodLabel,
@@ -48,6 +49,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     summary,
     dailyExpenses,
     categoryExpenses,
+    plannedByCategory,
     categories,
     periodOptions,
     latestAnalysis,
@@ -56,6 +58,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     getPeriodFinancialSummary(selectedRange),
     getDailyExpenses(selectedRange),
     getCategoryExpenses(selectedRange),
+    getBudgetExpensesByCategory(selectedRange),
     getCategories(),
     getPeriodOptions(),
     getLatestAnalysis(selectedPeriodKey),
@@ -144,6 +147,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <DashboardCharts
         dailyExpenses={dailyExpenses}
         categoryExpenses={categoryExpenses}
+        plannedByCategory={plannedByCategory}
+        transactions={transactions.map((transaction) => ({
+          id: transaction.id,
+          date: transaction.date.toISOString(),
+          type: transaction.type,
+          amount: Number(transaction.amount),
+          notes: transaction.notes,
+          categoryName: transaction.category.name,
+        }))}
         periodLabel={periodLabel}
       />
 
@@ -157,6 +169,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <CardContent>
           <TransactionList
             transactions={transactions}
+            periodStart={toInputDate(selectedRange.start)}
+            periodEnd={toInputDate(selectedRange.end)}
             categories={categories.map((category) => ({
               id: category.id,
               name: category.name,
