@@ -12,21 +12,51 @@ export type PeriodOption = {
   label: string;
 };
 
-export function getPeriodRangeForDate(date: Date = new Date()): DateRange {
-  const year = date.getFullYear();
-  const month = date.getMonth();
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
 
-  if (date.getDate() >= PERIOD_START_DAY) {
-    return {
-      start: new Date(year, month, PERIOD_START_DAY),
-      end: new Date(year, month + 1, PERIOD_START_DAY - 1, 23, 59, 59, 999),
-    };
+/** Jika tanggal 5 jatuh Sabtu/Minggu, periode mulai hari Jumat sebelumnya. */
+export function getAdjustedPeriodStart(year: number, month: number): Date {
+  const nominal = new Date(year, month, PERIOD_START_DAY);
+  const dayOfWeek = nominal.getDay();
+
+  if (dayOfWeek === 6) {
+    return new Date(year, month, PERIOD_START_DAY - 1);
   }
 
-  return {
-    start: new Date(year, month - 1, PERIOD_START_DAY),
-    end: new Date(year, month, PERIOD_START_DAY - 1, 23, 59, 59, 999),
-  };
+  if (dayOfWeek === 0) {
+    return new Date(year, month, PERIOD_START_DAY - 2);
+  }
+
+  return nominal;
+}
+
+export function getPeriodRangeFromNominalMonth(year: number, month: number): DateRange {
+  const start = getAdjustedPeriodStart(year, month);
+  const nextYear = month === 11 ? year + 1 : year;
+  const nextMonth = month === 11 ? 0 : month + 1;
+  const nextStart = getAdjustedPeriodStart(nextYear, nextMonth);
+  const end = new Date(nextStart);
+  end.setDate(end.getDate() - 1);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
+export function getPeriodRangeForDate(date: Date = new Date()): DateRange {
+  const day = startOfDay(date);
+  const thisMonthRange = getPeriodRangeFromNominalMonth(day.getFullYear(), day.getMonth());
+
+  if (day >= startOfDay(thisMonthRange.start)) {
+    return thisMonthRange;
+  }
+
+  const prevMonth = day.getMonth() - 1;
+  const year = prevMonth < 0 ? day.getFullYear() - 1 : day.getFullYear();
+  const month = prevMonth < 0 ? 11 : prevMonth;
+
+  return getPeriodRangeFromNominalMonth(year, month);
 }
 
 export function getPeriodKey(start: Date): string {
@@ -44,10 +74,7 @@ export function parsePeriodKey(key: string): DateRange {
     return getPeriodRangeForDate(new Date());
   }
 
-  return {
-    start: new Date(year, month, PERIOD_START_DAY),
-    end: new Date(year, month + 1, PERIOD_START_DAY - 1, 23, 59, 59, 999),
-  };
+  return getPeriodRangeFromNominalMonth(year, month);
 }
 
 export function formatPeriodLabel(start: Date, end: Date): string {

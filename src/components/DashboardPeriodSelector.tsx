@@ -23,7 +23,7 @@ export function DashboardPeriodSelector({
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Periode</CardTitle>
         <CardDescription>
-          Tanggal 5 bulan ini sampai tanggal 4 bulan berikutnya
+          Mulai tanggal 5 setiap bulan (maju ke Jumat jika tanggal 5 jatuh Sabtu/Minggu)
         </CardDescription>
       </CardHeader>
       <CardContent>
