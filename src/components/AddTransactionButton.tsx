@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TransactionModal } from "@/components/TransactionModal";
-import type { CategoryOption } from "@/components/TransactionForm";
+import type { CategoryOption, TransactionFormValues } from "@/components/TransactionForm";
 
 export function AddTransactionButton({
   categories,
+  transactions,
 }: {
   categories: CategoryOption[];
+  transactions: TransactionFormValues[];
 }) {
   const [open, setOpen] = useState(false);
 
@@ -21,6 +23,7 @@ export function AddTransactionButton({
         open={open}
         onOpenChange={setOpen}
         categories={categories}
+        transactions={transactions}
       />
     </>
   );

@@ -96,6 +96,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
               name: category.name,
               type: category.type,
             }))}
+            transactions={transactions.map((transaction) => ({
+              id: transaction.id,
+              date: transaction.date,
+              type: transaction.type,
+              categoryId: transaction.categoryId,
+              amount: Number(transaction.amount),
+              notes: transaction.notes,
+            }))}
           />
         </div>
       </div>

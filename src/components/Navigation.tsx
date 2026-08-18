@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Dashboard" },
   { href: "/rancangan-anggaran", label: "Rancangan Anggaran" },
+  { href: "/import-pdf", label: "Import PDF" },
   { href: "/categories", label: "Kategori" },
 ];
 

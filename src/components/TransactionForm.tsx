@@ -36,15 +36,19 @@ const initialState = { error: undefined, success: undefined };
 type TransactionFormProps = {
   categories: CategoryOption[];
   transaction?: TransactionFormValues;
+  initialDate?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
+  onDateChange?: (date: string) => void;
 };
 
 export function TransactionForm({
   categories,
   transaction,
+  initialDate,
   onSuccess,
   onCancel,
+  onDateChange,
 }: TransactionFormProps) {
   const router = useRouter();
   const isEdit = Boolean(transaction);
@@ -54,6 +58,9 @@ export function TransactionForm({
 
   const [transactionType, setTransactionType] = useState<TransactionType>(
     transaction?.type ?? TRANSACTION_TYPES.EXPENSE,
+  );
+  const [dateValue, setDateValue] = useState(
+    transaction ? toInputDate(new Date(transaction.date)) : (initialDate ?? toInputDate()),
   );
   const [state, submitAction, pending] = useActionState(formAction, initialState);
 
@@ -68,6 +75,15 @@ export function TransactionForm({
       onSuccess?.();
     }
   }, [state.success, router, onSuccess]);
+
+  useEffect(() => {
+    setTransactionType(transaction?.type ?? TRANSACTION_TYPES.EXPENSE);
+    const nextDate = transaction
+      ? toInputDate(new Date(transaction.date))
+      : (initialDate ?? toInputDate());
+    setDateValue(nextDate);
+    onDateChange?.(nextDate);
+  }, [transaction, initialDate, onDateChange]);
 
   if (categories.length === 0) {
     return (
@@ -109,9 +125,11 @@ export function TransactionForm({
           id={`date-${transaction?.id ?? "new"}`}
           name="date"
           type="date"
-          defaultValue={
-            transaction ? toInputDate(new Date(transaction.date)) : toInputDate()
-          }
+          value={dateValue}
+          onChange={(event) => {
+            setDateValue(event.target.value);
+            onDateChange?.(event.target.value);
+          }}
           required
         />
       </div>

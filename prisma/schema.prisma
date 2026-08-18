@@ -36,8 +36,10 @@ model Category {
 model Transaction {
   id         Int             @id @default(autoincrement())
   date       DateTime        @db.Date
+  time       String?         @db.VarChar(20)
   amount     Decimal         @db.Decimal(15, 2)
   notes      String?         @db.Text
+  importHash String?         @unique @db.VarChar(64)
   type       TransactionType @default(EXPENSE)
   categoryId Int
   category   Category        @relation(fields: [categoryId], references: [id])

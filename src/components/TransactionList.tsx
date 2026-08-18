@@ -317,6 +317,7 @@ export function TransactionList({
           }
         }}
         categories={categories}
+        transactions={transactions.map(toFormValues)}
         transaction={
           editingTransaction ? toFormValues(editingTransaction) : undefined
         }
