@@ -4,8 +4,11 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { TransactionType } from "@prisma/client";
 import {
+  copyBudgetFromPeriod,
+  copyBudgetItem,
   createBudgetItem,
   deleteBudgetItem,
+  moveBudgetItem,
   updateBudgetItem,
 } from "@/actions/budget";
 import { Button } from "@/components/ui/button";
@@ -36,7 +39,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { getChartColor } from "@/lib/chart";
 import { formatCurrency, formatDateWithWeekday, toInputDate } from "@/lib/format";
-import { eachDayInRange, parsePeriodKey } from "@/lib/period";
+import {
+  eachDayInRange,
+  formatPeriodLabel,
+  getBudgetPeriodOptions,
+  getPeriodKey,
+  getPeriodRangeForDate,
+  parsePeriodKey,
+  type PeriodOption,
+} from "@/lib/period";
 import { cn } from "@/lib/utils";
 
 export type BudgetCategoryOption = {
@@ -84,6 +95,33 @@ export function BudgetPlanClient({
   const [amount, setAmount] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+
+  const [showCopyPeriod, setShowCopyPeriod] = useState(false);
+  const [sourcePeriodKey, setSourcePeriodKey] = useState("");
+
+  const [moveCopyTarget, setMoveCopyTarget] = useState<{
+    itemId: number;
+    mode: "move" | "copy";
+  } | null>(null);
+  const [targetDate, setTargetDate] = useState("");
+
+  const pastPeriodOptions = useMemo(() => {
+    const allOptions: PeriodOption[] = [];
+    const ref = new Date(range.start);
+    ref.setDate(ref.getDate() - 1);
+
+    for (let i = 0; i < 12; i++) {
+      const r = getPeriodRangeForDate(ref);
+      const key = getPeriodKey(r.start);
+      if (key !== periodKey) {
+        allOptions.push({ key, label: formatPeriodLabel(r.start, r.end) });
+      }
+      ref.setTime(r.start.getTime());
+      ref.setDate(ref.getDate() - 1);
+    }
+
+    return allOptions;
+  }, [range, periodKey]);
 
   const expenseCategories = categories.filter((category) => category.type === "EXPENSE");
   const incomeCategories = categories.filter((category) => category.type === "INCOME");
@@ -243,6 +281,43 @@ export function BudgetPlanClient({
     });
   }
 
+  function handleCopyFromPeriod() {
+    if (!sourcePeriodKey) return;
+    startTransition(async () => {
+      const sourceRange = parsePeriodKey(sourcePeriodKey);
+      const result = await copyBudgetFromPeriod(sourceRange, range);
+      if (result.error) {
+        setFormError(result.error);
+      } else {
+        setShowCopyPeriod(false);
+        setSourcePeriodKey("");
+        router.refresh();
+      }
+    });
+  }
+
+  function handleMoveCopy() {
+    if (!moveCopyTarget || !targetDate) return;
+    startTransition(async () => {
+      const result =
+        moveCopyTarget.mode === "move"
+          ? await moveBudgetItem(moveCopyTarget.itemId, targetDate)
+          : await copyBudgetItem(moveCopyTarget.itemId, targetDate);
+
+      if (result.error) {
+        setFormError(result.error);
+      } else {
+        setFormSuccess(result.success ?? "Berhasil");
+        setMoveCopyTarget(null);
+        setTargetDate("");
+        if (editingId === moveCopyTarget.itemId && moveCopyTarget.mode === "move") {
+          resetForm();
+        }
+        router.refresh();
+      }
+    });
+  }
+
   const todayKey = toInputDate(new Date());
 
   return (
@@ -250,8 +325,20 @@ export function BudgetPlanClient({
       <div className="grid gap-4 lg:grid-cols-[1fr_220px]">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Kalender Anggaran</CardTitle>
-            <CardDescription>{periodLabel} — klik tanggal untuk kelola anggaran</CardDescription>
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <CardTitle className="text-base">Kalender Anggaran</CardTitle>
+                <CardDescription>{periodLabel} — klik tanggal untuk kelola anggaran</CardDescription>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCopyPeriod(true)}
+              >
+                Ambil Rancangan
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-zinc-500">
@@ -418,6 +505,112 @@ export function BudgetPlanClient({
         </CardContent>
       </Card>
 
+      <Dialog open={showCopyPeriod} onOpenChange={setShowCopyPeriod}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ambil Rancangan Anggaran</DialogTitle>
+            <DialogDescription>
+              Salin semua item anggaran dari periode sebelumnya ke periode aktif
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="source-period">Periode Sumber</Label>
+              <select
+                id="source-period"
+                value={sourcePeriodKey}
+                onChange={(e) => setSourcePeriodKey(e.target.value)}
+                className="flex h-10 w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                <option value="">Pilih periode</option>
+                {pastPeriodOptions.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                disabled={pending || !sourcePeriodKey}
+                onClick={handleCopyFromPeriod}
+              >
+                {pending ? "Menyalin..." : "Salin ke Periode Aktif"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowCopyPeriod(false);
+                  setSourcePeriodKey("");
+                }}
+              >
+                Batal
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={moveCopyTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setMoveCopyTarget(null);
+            setTargetDate("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {moveCopyTarget?.mode === "move" ? "Pindahkan" : "Salin"} Anggaran
+            </DialogTitle>
+            <DialogDescription>
+              Pilih tanggal tujuan di periode aktif
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="target-date">Tanggal Tujuan</Label>
+              <Input
+                id="target-date"
+                type="date"
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
+                min={toInputDate(range.start)}
+                max={toInputDate(range.end)}
+                required
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                disabled={pending || !targetDate}
+                onClick={handleMoveCopy}
+              >
+                {pending
+                  ? "Memproses..."
+                  : moveCopyTarget?.mode === "move"
+                    ? "Pindahkan"
+                    : "Salin"}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setMoveCopyTarget(null);
+                  setTargetDate("");
+                }}
+              >
+                Batal
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={selectedDate !== null} onOpenChange={(open) => !open && closeDayDialog()}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
@@ -556,7 +749,7 @@ export function BudgetPlanClient({
                         {formatCurrency(item.amount)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
+                        <div className="flex flex-wrap justify-end gap-1">
                           <Button
                             type="button"
                             variant="outline"
@@ -564,6 +757,28 @@ export function BudgetPlanClient({
                             onClick={() => handleEdit(item)}
                           >
                             Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setMoveCopyTarget({ itemId: item.id, mode: "move" });
+                              setTargetDate("");
+                            }}
+                          >
+                            Move
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setMoveCopyTarget({ itemId: item.id, mode: "copy" });
+                              setTargetDate("");
+                            }}
+                          >
+                            Copy
                           </Button>
                           <Button
                             type="button"

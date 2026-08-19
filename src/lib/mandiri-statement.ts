@@ -1,8 +1,17 @@
 import { readFile } from "node:fs/promises";
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
-import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.mjs";
+import { getDocument } from "pdfjs-dist";
 
-(globalThis as typeof globalThis & { pdfjsWorker?: unknown }).pdfjsWorker = pdfjsWorker;
+async function ensurePdfWorker() {
+  const globalWithWorker = globalThis as typeof globalThis & {
+    pdfjsWorker?: unknown;
+  };
+
+  if (globalWithWorker.pdfjsWorker) {
+    return;
+  }
+
+  globalWithWorker.pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.mjs");
+}
 
 export type MandiriStatementTransaction = {
   rowNumber: number;
@@ -120,8 +129,9 @@ function parseTransactionsFromItems(items: PositionedText[]) {
 }
 
 export async function parseMandiriStatementPdf(file: File, password: string) {
+  await ensurePdfWorker();
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const pdf = await pdfjsLib.getDocument({
+  const pdf = await getDocument({
     data: bytes,
     password,
     useWorkerFetch: false,

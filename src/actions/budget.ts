@@ -137,3 +137,92 @@ export async function deleteBudgetItem(id: number): Promise<ActionState> {
     return { error: "Anggaran gagal dihapus" };
   }
 }
+
+export async function copyBudgetFromPeriod(
+  sourceRange: DateRange,
+  targetRange: DateRange,
+): Promise<ActionState> {
+  try {
+    const sourceItems = await prisma.budgetItem.findMany({
+      where: getDateFilter(sourceRange),
+    });
+
+    if (sourceItems.length === 0) {
+      return { error: "Tidak ada anggaran pada periode sumber" };
+    }
+
+    const sourceDays = Math.round(
+      (sourceRange.end.getTime() - sourceRange.start.getTime()) / 86_400_000,
+    );
+    const targetDays = Math.round(
+      (targetRange.end.getTime() - targetRange.start.getTime()) / 86_400_000,
+    );
+
+    const data = sourceItems.map((item) => {
+      const dayOffset = Math.round(
+        (item.date.getTime() - sourceRange.start.getTime()) / 86_400_000,
+      );
+      const mappedOffset = sourceDays > 0
+        ? Math.min(Math.round((dayOffset / sourceDays) * targetDays), targetDays)
+        : 0;
+      const newDate = new Date(targetRange.start);
+      newDate.setDate(newDate.getDate() + mappedOffset);
+
+      return {
+        date: newDate,
+        categoryId: item.categoryId,
+        amount: item.amount,
+        description: item.description,
+      };
+    });
+
+    await prisma.budgetItem.createMany({ data });
+    revalidatePath(BUDGET_PATH);
+    return { success: `${data.length} item anggaran berhasil disalin` };
+  } catch {
+    return { error: "Gagal menyalin anggaran dari periode sebelumnya" };
+  }
+}
+
+export async function moveBudgetItem(
+  id: number,
+  newDate: string,
+): Promise<ActionState> {
+  try {
+    await prisma.budgetItem.update({
+      where: { id },
+      data: { date: new Date(newDate) },
+    });
+    revalidatePath(BUDGET_PATH);
+    return { success: "Anggaran berhasil dipindahkan" };
+  } catch {
+    return { error: "Gagal memindahkan anggaran" };
+  }
+}
+
+export async function copyBudgetItem(
+  id: number,
+  newDate: string,
+): Promise<ActionState> {
+  try {
+    const source = await prisma.budgetItem.findUnique({ where: { id } });
+
+    if (!source) {
+      return { error: "Item anggaran tidak ditemukan" };
+    }
+
+    await prisma.budgetItem.create({
+      data: {
+        date: new Date(newDate),
+        categoryId: source.categoryId,
+        amount: source.amount,
+        description: source.description,
+      },
+    });
+
+    revalidatePath(BUDGET_PATH);
+    return { success: "Anggaran berhasil disalin" };
+  } catch {
+    return { error: "Gagal menyalin anggaran" };
+  }
+}
