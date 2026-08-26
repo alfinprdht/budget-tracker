@@ -1,17 +1,51 @@
 import { readFile } from "node:fs/promises";
-import { getDocument } from "pdfjs-dist";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+import * as pdfjsWorker from "pdfjs-dist/legacy/build/pdf.worker.mjs";
 
-async function ensurePdfWorker() {
-  const globalWithWorker = globalThis as typeof globalThis & {
-    pdfjsWorker?: unknown;
-  };
+const globalWithWorker = globalThis as typeof globalThis & {
+  pdfjsWorker?: unknown;
+};
 
-  if (globalWithWorker.pdfjsWorker) {
-    return;
-  }
+// pdfjs expects DOMMatrix in Node environments.
+if (typeof (globalThis as { DOMMatrix?: unknown }).DOMMatrix === "undefined") {
+  Object.defineProperty(globalThis, "DOMMatrix", {
+    value: class DOMMatrixPolyfill {
+      a = 1;
+      b = 0;
+      c = 0;
+      d = 1;
+      e = 0;
+      f = 0;
 
-  globalWithWorker.pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.mjs");
+      constructor(init?: string | number[]) {
+        if (Array.isArray(init) && init.length >= 6) {
+          this.a = init[0] ?? 1;
+          this.b = init[1] ?? 0;
+          this.c = init[2] ?? 0;
+          this.d = init[3] ?? 1;
+          this.e = init[4] ?? 0;
+          this.f = init[5] ?? 0;
+        }
+      }
+
+      static fromMatrix() {
+        return new DOMMatrixPolyfill();
+      }
+
+      static fromFloat32Array() {
+        return new DOMMatrixPolyfill();
+      }
+
+      static fromFloat64Array() {
+        return new DOMMatrixPolyfill();
+      }
+    },
+    configurable: true,
+    writable: true,
+  });
 }
+
+globalWithWorker.pdfjsWorker = pdfjsWorker;
 
 export type MandiriStatementTransaction = {
   rowNumber: number;
@@ -129,9 +163,8 @@ function parseTransactionsFromItems(items: PositionedText[]) {
 }
 
 export async function parseMandiriStatementPdf(file: File, password: string) {
-  await ensurePdfWorker();
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const pdf = await getDocument({
+  const pdf = await pdfjsLib.getDocument({
     data: bytes,
     password,
     useWorkerFetch: false,
@@ -146,18 +179,18 @@ export async function parseMandiriStatementPdf(file: File, password: string) {
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
     const items = content.items
-      .map((item) => {
-        if (!("str" in item) || typeof item.str !== "string") {
+      .map((item: { str?: unknown; transform?: number[] }) => {
+        if (typeof item.str !== "string" || !Array.isArray(item.transform)) {
           return null;
         }
 
         return {
           str: item.str,
-          x: item.transform[4],
-          y: item.transform[5],
+          x: item.transform[4] ?? 0,
+          y: item.transform[5] ?? 0,
         } satisfies PositionedText;
       })
-      .filter((item): item is PositionedText => {
+      .filter((item: PositionedText | null): item is PositionedText => {
         return item !== null && item.str.trim().length > 0;
       });
 
@@ -174,10 +207,10 @@ export async function parseMandiriStatementPdf(file: File, password: string) {
     accountNumber:
       extractFirstMatch(rawText, /(\d{10,})\s*:\s*: IDR/i) ??
       extractFirstMatch(rawText, /(\d{10,})/),
-    accountName: extractFirstMatch(rawText, /Closing Balance :\s*\n([A-Z\s]+)\nKCP/i),
     period:
       extractFirstMatch(rawText, /(\d{2} [A-Za-z]{3} \d{4} - \d{2} [A-Za-z]{3} \d{4})/) ??
       extractMeta(rawText, "Periode/Period"),
+    accountName: extractFirstMatch(rawText, /Closing Balance :\s*\n([A-Z\s]+)\nKCP/i),
     openingBalance: (() => {
       const value = extractMeta(rawText, "Saldo Awal/Initial Balance");
       return value ? parseIndonesianAmount(value) : null;

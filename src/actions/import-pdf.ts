@@ -186,5 +186,6 @@ function parseStatementDateToDate(value: string) {
     throw new Error(`Bulan statement tidak valid: ${monthLabel}`);
   }
 
-  return new Date(Number(year), month, Number(day));
+  // Gunakan tengah hari UTC agar DATE MySQL tidak bergeser karena timezone lokal.
+  return new Date(Date.UTC(Number(year), month, Number(day), 12, 0, 0));
 }

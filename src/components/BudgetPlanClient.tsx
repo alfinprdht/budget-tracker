@@ -42,7 +42,6 @@ import { formatCurrency, formatDateWithWeekday, toInputDate } from "@/lib/format
 import {
   eachDayInRange,
   formatPeriodLabel,
-  getBudgetPeriodOptions,
   getPeriodKey,
   getPeriodRangeForDate,
   parsePeriodKey,
