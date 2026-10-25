@@ -18,7 +18,10 @@ import {
   type DateRange,
   type PeriodOption,
 } from "@/lib/period";
-import { transactionSchema } from "@/lib/validations";
+import {
+  bulkTransactionCategorySchema,
+  transactionSchema,
+} from "@/lib/validations";
 import type { ActionState } from "@/actions/categories";
 
 function getDateFilter(range: DateRange) {
@@ -250,6 +253,52 @@ export async function updateTransaction(
 
   revalidatePath("/");
   return { success: "Transaksi berhasil diperbarui" };
+}
+
+export async function bulkUpdateTransactionCategory(
+  ids: number[],
+  categoryId: number,
+): Promise<ActionState> {
+  const parsed = bulkTransactionCategorySchema.safeParse({ ids, categoryId });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Data tidak valid" };
+  }
+
+  const uniqueIds = [...new Set(parsed.data.ids)];
+
+  const category = await prisma.category.findUnique({
+    where: { id: parsed.data.categoryId },
+  });
+
+  if (!category) {
+    return { error: "Kategori tidak ditemukan" };
+  }
+
+  const transactions = await prisma.transaction.findMany({
+    where: { id: { in: uniqueIds } },
+    select: { type: true },
+  });
+
+  if (transactions.length !== uniqueIds.length) {
+    return { error: "Sebagian transaksi tidak ditemukan" };
+  }
+
+  if (transactions.some((transaction) => transaction.type !== category.type)) {
+    return { error: "Kategori tidak sesuai dengan jenis transaksi" };
+  }
+
+  try {
+    const result = await prisma.transaction.updateMany({
+      where: { id: { in: uniqueIds }, type: category.type },
+      data: { categoryId: category.id },
+    });
+
+    revalidatePath("/");
+    return { success: `${result.count} transaksi dipindah ke ${category.name}` };
+  } catch {
+    return { error: "Kategori transaksi gagal diperbarui" };
+  }
 }
 
 export async function deleteTransaction(id: number): Promise<ActionState> {

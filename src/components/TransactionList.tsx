@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { TransactionType } from "@prisma/client";
-import { deleteTransaction } from "@/actions/transactions";
+import {
+  bulkUpdateTransactionCategory,
+  deleteTransaction,
+} from "@/actions/transactions";
 import { TransactionModal } from "@/components/TransactionModal";
 import type { CategoryOption, TransactionFormValues } from "@/components/TransactionForm";
 import { Button } from "@/components/ui/button";
@@ -87,6 +90,13 @@ export function TransactionList({
   const [dateTo, setDateTo] = useState(periodEnd);
   const [simulationMode, setSimulationMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkSelectedIds, setBulkSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkCategoryId, setBulkCategoryId] = useState("");
+  const [bulkPending, setBulkPending] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState<{
+    type: "error" | "success";
+    text: string;
+  } | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<TransactionItem | null>(
     null,
   );
@@ -126,6 +136,31 @@ export function TransactionList({
     }, 0);
   }, [transactions, selectedIds]);
 
+  // Only rows visible under the current filters count toward a bulk edit.
+  const bulkSelectedTransactions = useMemo(() => {
+    return filteredTransactions.filter((transaction) =>
+      bulkSelectedIds.has(transaction.id),
+    );
+  }, [filteredTransactions, bulkSelectedIds]);
+
+  const bulkTypes = new Set(bulkSelectedTransactions.map((transaction) => transaction.type));
+  const bulkType = bulkTypes.size === 1 ? [...bulkTypes][0] : null;
+  const bulkHasMixedTypes = bulkTypes.size > 1;
+  const bulkCategoryOptions = bulkType
+    ? categories.filter((category) => category.type === bulkType)
+    : [];
+  const selectedBulkCategoryId = bulkCategoryOptions.some(
+    (category) => String(category.id) === bulkCategoryId,
+  )
+    ? bulkCategoryId
+    : "";
+  const allVisibleBulkSelected =
+    filteredTransactions.length > 0 &&
+    bulkSelectedTransactions.length === filteredTransactions.length;
+  const someVisibleBulkSelected =
+    bulkSelectedTransactions.length > 0 && !allVisibleBulkSelected;
+  const showBulkToolbar = !simulationMode && bulkSelectedTransactions.length > 0;
+
   function toggleSimulationMode() {
     setSimulationMode((current) => {
       if (current) {
@@ -134,6 +169,57 @@ export function TransactionList({
 
       return !current;
     });
+  }
+
+  function toggleBulkSelection(id: number) {
+    setBulkMessage(null);
+    setBulkSelectedIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+
+      return next;
+    });
+  }
+
+  function toggleAllVisibleBulkSelection() {
+    setBulkMessage(null);
+    setBulkSelectedIds(
+      allVisibleBulkSelected
+        ? new Set()
+        : new Set(filteredTransactions.map((transaction) => transaction.id)),
+    );
+  }
+
+  function clearBulkSelection() {
+    setBulkSelectedIds(new Set());
+    setBulkCategoryId("");
+  }
+
+  async function handleBulkSave() {
+    if (!selectedBulkCategoryId) {
+      return;
+    }
+
+    setBulkPending(true);
+    setBulkMessage(null);
+    const result = await bulkUpdateTransactionCategory(
+      bulkSelectedTransactions.map((transaction) => transaction.id),
+      Number(selectedBulkCategoryId),
+    );
+
+    if (result.error) {
+      setBulkMessage({ type: "error", text: result.error });
+    } else {
+      clearBulkSelection();
+      setBulkMessage({ type: "success", text: result.success ?? "Kategori diperbarui" });
+    }
+
+    setBulkPending(false);
   }
 
   function toggleTransactionSelection(id: number) {
@@ -229,6 +315,58 @@ export function TransactionList({
               {selectedIds.size > 0 ? ` (${selectedIds.size} transaksi)` : ""}
             </p>
           ) : null}
+          {showBulkToolbar ? (
+            <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+              <span className="text-sm text-zinc-500">
+                {bulkSelectedTransactions.length} dipilih
+              </span>
+              {bulkHasMixedTypes ? (
+                <span className="text-sm text-amber-600">
+                  Pilih transaksi dengan jenis yang sama
+                </span>
+              ) : null}
+              <select
+                aria-label="Kategori baru"
+                value={selectedBulkCategoryId}
+                disabled={bulkHasMixedTypes || bulkPending}
+                onChange={(event) => setBulkCategoryId(event.target.value)}
+                className="flex h-8 min-w-44 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+              >
+                <option value="">Pilih kategori</option>
+                {bulkCategoryOptions.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                type="button"
+                disabled={!selectedBulkCategoryId || bulkPending}
+                onClick={handleBulkSave}
+              >
+                {bulkPending ? "Menyimpan..." : "Simpan"}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={bulkPending}
+                onClick={clearBulkSelection}
+              >
+                Batal
+              </Button>
+            </div>
+          ) : null}
+          {bulkMessage && !simulationMode ? (
+            <p
+              className={cn(
+                "text-sm",
+                !showBulkToolbar && "ml-auto",
+                bulkMessage.type === "error" ? "text-red-600" : "text-green-600",
+              )}
+            >
+              {bulkMessage.text}
+            </p>
+          ) : null}
         </div>
 
         {filteredTransactions.length === 0 ? (
@@ -245,6 +383,22 @@ export function TransactionList({
                   </TableHead>
                 ) : null}
                 <TableHead>Tanggal</TableHead>
+                {!simulationMode ? (
+                  <TableHead className="w-10">
+                    <input
+                      type="checkbox"
+                      checked={allVisibleBulkSelected}
+                      ref={(element) => {
+                        if (element) {
+                          element.indeterminate = someVisibleBulkSelected;
+                        }
+                      }}
+                      onChange={toggleAllVisibleBulkSelection}
+                      aria-label="Pilih semua transaksi untuk ubah kategori"
+                      className="size-4 rounded border-input align-middle"
+                    />
+                  </TableHead>
+                ) : null}
                 <TableHead>Kategori</TableHead>
                 <TableHead>Total</TableHead>
                 <TableHead>Catatan</TableHead>
@@ -255,6 +409,11 @@ export function TransactionList({
               {filteredTransactions.map((transaction) => (
                 <TableRow
                   key={transaction.id}
+                  data-state={
+                    !simulationMode && bulkSelectedIds.has(transaction.id)
+                      ? "selected"
+                      : undefined
+                  }
                   className={cn(
                     simulationMode &&
                       selectedIds.has(transaction.id) &&
@@ -276,6 +435,17 @@ export function TransactionList({
                     </TableCell>
                   ) : null}
                   <TableCell>{formatDate(transaction.date)}</TableCell>
+                  {!simulationMode ? (
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={bulkSelectedIds.has(transaction.id)}
+                        onChange={() => toggleBulkSelection(transaction.id)}
+                        aria-label={`Pilih ${transaction.notes ?? transaction.category.name} untuk ubah kategori`}
+                        className="size-4 rounded border-input align-middle"
+                      />
+                    </TableCell>
+                  ) : null}
                   <TableCell>{transaction.category.name}</TableCell>
                   <TableCell
                     className={cn(

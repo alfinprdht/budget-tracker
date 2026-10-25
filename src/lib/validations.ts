@@ -29,6 +29,16 @@ export const transactionSchema = z.object({
     .transform((value) => (value === "" ? undefined : value)),
 });
 
+export const bulkTransactionCategorySchema = z.object({
+  ids: z
+    .array(z.number().int().positive())
+    .min(1, "Pilih minimal satu transaksi"),
+  categoryId: z.coerce
+    .number()
+    .int("Kategori tidak valid")
+    .positive("Kategori wajib dipilih"),
+});
+
 export type CategoryInput = z.infer<typeof categorySchema>;
 export type TransactionInput = z.infer<typeof transactionSchema>;
 
